@@ -4,69 +4,48 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
 } from "react-native";
 import React, { useState } from "react";
-import pets from "@/data/pets";
+import { useQuery } from "@tanstack/react-query";
+import { getPets } from "@/api/pets";
 import PetItem from "./PetItem";
 
 const PetList = () => {
   const [search, setSearch] = useState("");
   const [type, setType] = useState("");
-  const [displayPets, setDisplayPets] = useState(pets);
 
-  const petList = displayPets
+  const { data: pets = [], isLoading, isError, refetch } = useQuery({
+    queryKey: ["pets"],
+    queryFn: getPets,
+  });
+
+  if (isLoading) return <ActivityIndicator size="large" color="black" />;
+  if (isError) return <Text>Error loading pets. <Text onPress={refetch}>Try again</Text></Text>;
+
+  const filteredPets = pets
     .filter((pet) => pet.name.toLowerCase().includes(search.toLowerCase()))
-    .filter((pet) => pet.type.toLowerCase().includes(type.toLowerCase()))
-    .map((pet) => (
-      <PetItem
-        key={pet.id}
-        pet={pet}
-        setDisplayPets={setDisplayPets}
-        displayPets={displayPets}
-      />
-    ));
+    .filter((pet) => pet.type.toLowerCase().includes(type.toLowerCase()));
+
   return (
-    <ScrollView
-      contentContainerStyle={styles.container}
-      style={styles.containerStyle}
-    >
-      {/* Search Input */}
+    <ScrollView contentContainerStyle={styles.container} style={styles.containerStyle}>
       <TextInput
         placeholder="Search for a pet"
         style={styles.searchInput}
         onChangeText={(value) => setSearch(value)}
       />
 
-      {/* Filter by type */}
       <ScrollView horizontal contentContainerStyle={styles.filterContainer}>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setType("")}
-        >
-          <Text>All</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setType("Cat")}
-        >
-          <Text>Cat</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setType("Dog")}
-        >
-          <Text>Dog</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.filterButton}
-          onPress={() => setType("Rabbit")}
-        >
-          <Text>Rabbit</Text>
-        </TouchableOpacity>
+        {["", "Cat", "Dog", "Rabbit"].map((t) => (
+          <TouchableOpacity key={t} style={styles.filterButton} onPress={() => setType(t)}>
+            <Text>{t === "" ? "All" : t}</Text>
+          </TouchableOpacity>
+        ))}
       </ScrollView>
 
-      {/* Pet List */}
-      {petList}
+      {filteredPets.map((pet) => (
+        <PetItem key={pet.id} pet={pet} />
+      ))}
     </ScrollView>
   );
 };
@@ -92,11 +71,6 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     backgroundColor: "#fff",
     borderColor: "#000",
-  },
-  filterTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 10,
   },
   filterContainer: {
     flexDirection: "row",

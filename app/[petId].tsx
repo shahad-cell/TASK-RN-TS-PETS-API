@@ -1,23 +1,44 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import {
+  Image,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+  ActivityIndicator,
+} from "react-native";
 import React from "react";
 import { useLocalSearchParams } from "expo-router";
-import pets from "@/data/pets";
+import { useQuery } from "@tanstack/react-query";
+import { getOnePet } from "@/api/pets";
 
 const PetDetails = () => {
   const { petId } = useLocalSearchParams();
-  const pet = pets[0];
+
+  const {
+    data: pet,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["pet", petId],
+    queryFn: () => getOnePet(petId),
+    enabled: !!petId,
+  });
+
+  if (isLoading) return <ActivityIndicator size="large" color="black" />;
+  if (isError)
+    return (
+      <View style={styles.container}>
+        <Text>Error loading pet. <Text onPress={refetch}>Try again</Text></Text>
+      </View>
+    );
+
   return (
     <View style={styles.container}>
       <Text style={styles.name}>{pet.name}</Text>
       <Image source={{ uri: pet.image }} style={styles.image} />
       <Text style={styles.description}> {pet.description}</Text>
       <Text style={styles.type}>Type: {pet.type}</Text>
-
-      <View>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Delete</Text>
-        </TouchableOpacity>
-      </View>
     </View>
   );
 };
@@ -29,6 +50,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#f9e3be",
     padding: 20,
+    justifyContent: "center",
   },
   image: {
     width: "100%",
@@ -47,16 +69,6 @@ const styles = StyleSheet.create({
   type: {
     fontSize: 16,
     marginTop: 10,
-    textAlign: "center",
-  },
-  button: {
-    backgroundColor: "black",
-    padding: 10,
-    borderRadius: 10,
-    margin: 10,
-  },
-  buttonText: {
-    color: "white",
     textAlign: "center",
   },
 });
