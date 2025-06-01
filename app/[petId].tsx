@@ -1,23 +1,48 @@
-import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
-import React from "react";
+import { useQuery } from "@tanstack/react-query";
 import { useLocalSearchParams } from "expo-router";
-import pets from "@/data/pets";
+import {
+  View,
+  Text,
+  ActivityIndicator,
+  Image,
+  StyleSheet,
+  TouchableOpacity,
+} from "react-native";
+import { fetchPetById } from "@/api/pets";
 
 const PetDetails = () => {
   const { petId } = useLocalSearchParams();
-  const pet = pets[0];
-  return (
-    <View style={styles.container}>
-      <Text style={styles.name}>{pet.name}</Text>
-      <Image source={{ uri: pet.image }} style={styles.image} />
-      <Text style={styles.description}> {pet.description}</Text>
-      <Text style={styles.type}>Type: {pet.type}</Text>
 
-      <View>
-        <TouchableOpacity style={styles.button}>
-          <Text style={styles.buttonText}>Delete</Text>
+  const {
+    data: pet,
+    isLoading,
+    isError,
+    refetch,
+  } = useQuery({
+    queryKey: ["pet", petId],
+    queryFn: () => fetchPetById(petId as string),
+    enabled: !!petId,
+  });
+
+  if (isLoading) return <ActivityIndicator size="large" color="black" />;
+  if (isError)
+    return (
+      <View style={{ padding: 20 }}>
+        <Text style={{ color: "red", textAlign: "center" }}>
+          Could not load pet details.
+        </Text>
+        <TouchableOpacity onPress={() => refetch()}>
+          <Text style={{ color: "blue", textAlign: "center" }}>Try again</Text>
         </TouchableOpacity>
       </View>
+    );
+
+  return (
+    <View style={{ padding: 20 }}>
+      <Text style={styles.title}>{pet.name}</Text>
+      <Image source={{ uri: pet.image }} style={styles.image} />
+      <Text style={styles.description}>{pet.description}</Text>
+      <Text style={styles.type}>Type: {pet.type}</Text>
     </View>
   );
 };
@@ -25,38 +50,25 @@ const PetDetails = () => {
 export default PetDetails;
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#f9e3be",
-    padding: 20,
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+    marginBottom: 10,
+    textAlign: "center",
   },
   image: {
     width: "100%",
     height: 300,
-  },
-  name: {
-    fontSize: 24,
-    fontWeight: "bold",
-    textAlign: "center",
+    borderRadius: 10,
+    marginBottom: 10,
   },
   description: {
     fontSize: 16,
-    marginTop: 10,
+    marginBottom: 5,
     textAlign: "center",
   },
   type: {
     fontSize: 16,
-    marginTop: 10,
-    textAlign: "center",
-  },
-  button: {
-    backgroundColor: "black",
-    padding: 10,
-    borderRadius: 10,
-    margin: 10,
-  },
-  buttonText: {
-    color: "white",
     textAlign: "center",
   },
 });
